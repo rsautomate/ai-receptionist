@@ -76,10 +76,30 @@ pp.get("/", async (req, res) => {
     res.status(500).send("Something went wrong.");
   }
 });
-app.get('/', (req, res) => {
-  res.send("AI Receptionist is running!");
-});
+app.get('/', async (req, res) => {
+  const userMessage = req.query.message || 'Hello';
+  try {
+    const gptResponse = await axios.post(
+      'https://api.openai.com/v1/chat/completions',
+      {
+        model: 'gpt-4',
+        messages: [{ role: 'user', content: userMessage }],
+      },
+      {
+        headers: {
+          Authorization: `Bearer ${OPENAI_API_KEY}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    );
 
+    const aiReply = gptResponse.data.choices[0].message.content.trim();
+    res.send(aiReply);
+  } catch (err) {
+    console.error(err);
+    res.status(500).send('Error getting response from GPT');
+  }
+});
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
