@@ -38,7 +38,44 @@ app.post('/webhook', async (req, res) => {
     res.status(500).send('<Response><Say>Sorry, I had an error.</Say></Response>');
   }
 });
+pp.get("/", async (req, res) => {
+  const userMessage = req.query.message;
 
+  if (!userMessage) {
+    return res.send("AI Receptionist is running!");
+  }
+
+  try {
+    const gptResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+      method: "POST",
+      headers: {
+        "Authorization": `Bearer ${process.env.OPENAI_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        model: "gpt-4",
+        messages: [
+          {
+            role: "system",
+            content: `You are a helpful AI receptionist. If the user wants to book an appointment, give them this link: ${process.env.CALENDLY_LINK}`,
+          },
+          {
+            role: "user",
+            content: userMessage,
+          },
+        ],
+      }),
+    });
+
+    const result = await gptResponse.json();
+    const reply = result.choices[0].message.content;
+    res.send(reply);
+
+  } catch (error) {
+    console.error("Error generating response:", error);
+    res.status(500).send("Something went wrong.");
+  }
+});
 app.get('/', (req, res) => {
   res.send("AI Receptionist is running!");
 });
@@ -47,3 +84,4 @@ const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
